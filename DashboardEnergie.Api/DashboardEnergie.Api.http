@@ -4,3 +4,12 @@ GET {{DashboardEnergie.Api_HostAddress}}/api/dashboard/snapshot
 Accept: application/json
 
 ###
+
+GET {{DashboardEnergie.Api_HostAddress}}/api/dashboard/rse-monthly
+Accept: application/json
+
+###
+
+POST {{DashboardEnergie.Api_HostAddress}}/api/dashboard/reload
+
+###

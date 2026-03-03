@@ -25,6 +25,12 @@ internal sealed class DashboardApiClient : IDisposable
         return snapshot ?? throw new InvalidOperationException("The API returned an empty dashboard payload.");
     }
 
+    public async Task ReloadAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await _httpClient.PostAsync("api/dashboard/reload", content: null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();

@@ -5,7 +5,11 @@ namespace DashboardEnergie.WinForms;
 
 internal sealed class PowerTrendChart : Control
 {
-    private IReadOnlyList<EnergyReadingDto> _readings = Array.Empty<EnergyReadingDto>();
+    private IReadOnlyList<ChartPoint> _points = Array.Empty<ChartPoint>();
+    private string _axisTitle = "Watts";
+    private string _emptyMessage = "Aucune donnee disponible.";
+    private double _minimumScale = 200d;
+    private string _valueFormat = "F0";
 
     public PowerTrendChart()
     {
@@ -18,7 +22,25 @@ internal sealed class PowerTrendChart : Control
 
     public void SetReadings(IReadOnlyList<EnergyReadingDto> readings)
     {
-        _readings = readings;
+        _points = readings
+            .Select(reading => new ChartPoint(reading.Timestamp.ToString("HH:mm"), reading.PowerWatts))
+            .ToList();
+        _axisTitle = "Watts";
+        _emptyMessage = "Aucune mesure technique disponible.";
+        _minimumScale = 200d;
+        _valueFormat = "F0";
+        Invalidate();
+    }
+
+    public void SetAggregations(IReadOnlyList<EnergyAggregationPointDto> aggregations)
+    {
+        _points = aggregations
+            .Select(point => new ChartPoint(point.Label, point.ValueKwh))
+            .ToList();
+        _axisTitle = "kWh";
+        _emptyMessage = "Aucune aggregation disponible.";
+        _minimumScale = 1d;
+        _valueFormat = "F2";
         Invalidate();
     }
 
@@ -38,13 +60,13 @@ internal sealed class PowerTrendChart : Control
         using var fillBrush = new SolidBrush(Color.FromArgb(75, 86, 141, 106));
         using var textBrush = new SolidBrush(Color.FromArgb(88, 94, 88));
 
-        DrawGrid(graphics, plotArea, axisPen, gridPen, textBrush);
+        DrawGrid(graphics, plotArea, axisPen, gridPen, textBrush, _axisTitle);
 
-        if (_readings.Count == 0)
+        if (_points.Count == 0)
         {
             TextRenderer.DrawText(
                 graphics,
-                "Aucune donnee disponible.",
+                _emptyMessage,
                 Font,
                 plotArea,
                 Color.FromArgb(100, 106, 100),
@@ -52,7 +74,7 @@ internal sealed class PowerTrendChart : Control
             return;
         }
 
-        var maxValue = Math.Max(200d, _readings.Max(reading => reading.PowerWatts) * 1.15d);
+        var maxValue = Math.Max(_minimumScale, _points.Max(point => point.Value) * 1.15d);
         var points = BuildPoints(plotArea, maxValue);
 
         using var path = new GraphicsPath();
@@ -72,7 +94,8 @@ internal sealed class PowerTrendChart : Control
         Rectangle plotArea,
         Pen axisPen,
         Pen gridPen,
-        SolidBrush textBrush)
+        SolidBrush textBrush,
+        string axisTitle)
     {
         graphics.DrawRectangle(axisPen, plotArea);
 
@@ -84,30 +107,30 @@ internal sealed class PowerTrendChart : Control
 
         TextRenderer.DrawText(
             graphics,
-            "Watts",
+            axisTitle,
             SystemFonts.CaptionFont,
-            new Rectangle(plotArea.Left - 42, plotArea.Top - 4, 40, 20),
+            new Rectangle(plotArea.Left - 48, plotArea.Top - 4, 46, 20),
             textBrush.Color,
             TextFormatFlags.Right);
     }
 
     private PointF[] BuildPoints(Rectangle plotArea, double maxValue)
     {
-        if (_readings.Count == 1)
+        if (_points.Count == 1)
         {
             return
             [
-                new PointF(plotArea.Left, ValueToY(plotArea, _readings[0].PowerWatts, maxValue)),
-                new PointF(plotArea.Right, ValueToY(plotArea, _readings[0].PowerWatts, maxValue))
+                new PointF(plotArea.Left, ValueToY(plotArea, _points[0].Value, maxValue)),
+                new PointF(plotArea.Right, ValueToY(plotArea, _points[0].Value, maxValue))
             ];
         }
 
-        var points = new PointF[_readings.Count];
+        var points = new PointF[_points.Count];
 
-        for (var index = 0; index < _readings.Count; index++)
+        for (var index = 0; index < _points.Count; index++)
         {
-            var x = plotArea.Left + (plotArea.Width * index / (float)(_readings.Count - 1));
-            points[index] = new PointF(x, ValueToY(plotArea, _readings[index].PowerWatts, maxValue));
+            var x = plotArea.Left + (plotArea.Width * index / (float)(_points.Count - 1));
+            points[index] = new PointF(x, ValueToY(plotArea, _points[index].Value, maxValue));
         }
 
         return points;
@@ -121,21 +144,21 @@ internal sealed class PowerTrendChart : Control
             var y = ValueToY(plotArea, tick, maxValue);
             TextRenderer.DrawText(
                 graphics,
-                $"{tick:F0}",
+                tick.ToString(_valueFormat),
                 Font,
                 new Rectangle(4, (int)y - 8, 46, 18),
                 textBrush.Color,
                 TextFormatFlags.Right);
         }
 
-        var labelIndexes = _readings.Count <= 4
-            ? Enumerable.Range(0, _readings.Count).ToArray()
-            : new[] { 0, _readings.Count / 3, (_readings.Count * 2) / 3, _readings.Count - 1 };
+        var labelIndexes = _points.Count <= 4
+            ? Enumerable.Range(0, _points.Count).ToArray()
+            : new[] { 0, _points.Count / 3, (_points.Count * 2) / 3, _points.Count - 1 };
 
         foreach (var index in labelIndexes.Distinct())
         {
-            var x = plotArea.Left + (plotArea.Width * index / (float)Math.Max(1, _readings.Count - 1));
-            var label = _readings[index].TimestampUtc.ToLocalTime().ToString("HH:mm:ss");
+            var x = plotArea.Left + (plotArea.Width * index / (float)Math.Max(1, _points.Count - 1));
+            var label = _points[index].Label;
             TextRenderer.DrawText(
                 graphics,
                 label,
@@ -152,4 +175,6 @@ internal sealed class PowerTrendChart : Control
         ratio = Math.Clamp(ratio, 0d, 1d);
         return plotArea.Bottom - (float)(ratio * plotArea.Height);
     }
+
+    private sealed record ChartPoint(string Label, double Value);
 }

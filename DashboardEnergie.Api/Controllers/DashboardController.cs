@@ -6,7 +6,9 @@ namespace DashboardEnergie.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class DashboardController(EnergyQueryService queryService) : ControllerBase
+public sealed class DashboardController(
+    EnergyQueryService queryService,
+    CsvDatasetImportService importService) : ControllerBase
 {
     [HttpGet("snapshot")]
     public async Task<ActionResult<DashboardSnapshotDto>> GetSnapshot(CancellationToken cancellationToken)
@@ -48,5 +50,20 @@ public sealed class DashboardController(EnergyQueryService queryService) : Contr
     {
         var aggregations = await queryService.GetAggregationsAsync(period, points, cancellationToken);
         return Ok(aggregations);
+    }
+
+    [HttpGet("rse-monthly")]
+    public async Task<ActionResult<IReadOnlyList<RseMonthlyBreakdownDto>>> GetRseMonthly(
+        CancellationToken cancellationToken = default)
+    {
+        var breakdown = await queryService.GetRseMonthlyBreakdownsAsync(cancellationToken);
+        return Ok(breakdown);
+    }
+
+    [HttpPost("reload")]
+    public async Task<IActionResult> ReloadFromCsv(CancellationToken cancellationToken)
+    {
+        await importService.ReloadAsync(cancellationToken);
+        return NoContent();
     }
 }

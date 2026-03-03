@@ -16,5 +16,13 @@ public sealed class DashboardSummaryDto
 
     public int AlertThresholdWatts { get; init; }
 
-    public DateTime LastUpdateUtc { get; init; }
+    public DateTime LastUpdate { get; init; }
+
+    public double AnnualRseKwh { get; init; }
+
+    public string LatestMonthLabel { get; init; } = string.Empty;
+
+    public DateTime CoverageStart { get; init; }
+
+    public DateTime CoverageEnd { get; init; }
 }

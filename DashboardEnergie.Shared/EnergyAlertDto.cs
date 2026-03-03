@@ -2,7 +2,7 @@ namespace DashboardEnergie.Shared;
 
 public sealed class EnergyAlertDto
 {
-    public DateTime TimestampUtc { get; init; }
+    public DateTime Timestamp { get; init; }
 
     public string Severity { get; init; } = string.Empty;
 
