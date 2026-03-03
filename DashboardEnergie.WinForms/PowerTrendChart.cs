@@ -135,7 +135,7 @@ internal sealed class PowerTrendChart : Control
         foreach (var index in labelIndexes.Distinct())
         {
             var x = plotArea.Left + (plotArea.Width * index / (float)Math.Max(1, _readings.Count - 1));
-            var label = _readings[index].TimestampUtc.ToLocalTime().ToString("HH:mm:ss");
+            var label = _readings[index].Timestamp.ToString("HH:mm");
             TextRenderer.DrawText(
                 graphics,
                 label,

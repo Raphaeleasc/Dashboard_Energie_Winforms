@@ -11,4 +11,8 @@ public sealed class DashboardSnapshotDto
     public IReadOnlyList<EnergyAggregationPointDto> DailyConsumption { get; init; } = Array.Empty<EnergyAggregationPointDto>();
 
     public IReadOnlyList<EnergyAlertDto> Alerts { get; init; } = Array.Empty<EnergyAlertDto>();
+
+    public IReadOnlyList<RseCategoryTotalDto> RseCategoryTotals { get; init; } = Array.Empty<RseCategoryTotalDto>();
+
+    public IReadOnlyList<RseMonthlyBreakdownDto> RseMonthlyBreakdowns { get; init; } = Array.Empty<RseMonthlyBreakdownDto>();
 }

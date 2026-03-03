@@ -2,7 +2,7 @@ namespace DashboardEnergie.Shared;
 
 public sealed class EnergyReadingDto
 {
-    public DateTime TimestampUtc { get; init; }
+    public DateTime Timestamp { get; init; }
 
     public string Source { get; init; } = string.Empty;
 

@@ -4,7 +4,7 @@ public sealed class EnergyAggregationPointDto
 {
     public AggregationPeriod Period { get; init; }
 
-    public DateTime BucketStartUtc { get; init; }
+    public DateTime BucketStart { get; init; }
 
     public string Label { get; init; } = string.Empty;
 
