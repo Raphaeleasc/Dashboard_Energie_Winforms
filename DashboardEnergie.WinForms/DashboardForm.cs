@@ -458,10 +458,12 @@ public sealed class DashboardForm : Form
         _alertsList.View = View.Details;
         _alertsList.FullRowSelect = true;
         _alertsList.GridLines = false;
+        _alertsList.HideSelection = false;
         _alertsList.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-        _alertsList.Columns.Add("Heure", 120);
-        _alertsList.Columns.Add("Niveau", 110);
-        _alertsList.Columns.Add("Message", 340);
+        _alertsList.Columns.Add("Heure");
+        _alertsList.Columns.Add("Niveau");
+        _alertsList.Columns.Add("Message");
+        _alertsList.Resize += (_, _) => ResizeAlertsColumns();
     }
 
     private void ConfigureDailyAggregationList()
@@ -469,9 +471,11 @@ public sealed class DashboardForm : Form
         _dailyAggregationList.View = View.Details;
         _dailyAggregationList.FullRowSelect = true;
         _dailyAggregationList.GridLines = false;
+        _dailyAggregationList.HideSelection = false;
         _dailyAggregationList.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-        _dailyAggregationList.Columns.Add("Jour", 100);
-        _dailyAggregationList.Columns.Add("kWh", 90);
+        _dailyAggregationList.Columns.Add("Jour");
+        _dailyAggregationList.Columns.Add("kWh");
+        _dailyAggregationList.Resize += (_, _) => ResizeDailyAggregationColumns();
     }
 
     private void ConfigureRseTotalsList()
@@ -479,10 +483,12 @@ public sealed class DashboardForm : Form
         _rseTotalsList.View = View.Details;
         _rseTotalsList.FullRowSelect = true;
         _rseTotalsList.GridLines = false;
+        _rseTotalsList.HideSelection = false;
         _rseTotalsList.HeaderStyle = ColumnHeaderStyle.Nonclickable;
-        _rseTotalsList.Columns.Add("Poste", 150);
-        _rseTotalsList.Columns.Add("kWh", 90);
-        _rseTotalsList.Columns.Add("Part", 90);
+        _rseTotalsList.Columns.Add("Poste");
+        _rseTotalsList.Columns.Add("kWh");
+        _rseTotalsList.Columns.Add("Part");
+        _rseTotalsList.Resize += (_, _) => ResizeRseTotalsColumns();
     }
 
     private void ConfigureTechnicianChartModeSelector()
@@ -679,6 +685,7 @@ public sealed class DashboardForm : Form
         }
 
         _alertsList.EndUpdate();
+        ResizeAlertsColumns();
     }
 
     private void UpdateDailyAggregations(IReadOnlyList<EnergyAggregationPointDto> dailyAggregations)
@@ -699,6 +706,7 @@ public sealed class DashboardForm : Form
         }
 
         _dailyAggregationList.EndUpdate();
+        ResizeDailyAggregationColumns();
     }
 
     private void UpdateMonthlyBreakdowns(IReadOnlyList<RseMonthlyBreakdownDto> breakdowns)
@@ -736,6 +744,43 @@ public sealed class DashboardForm : Form
         }
 
         _rseTotalsList.EndUpdate();
+        ResizeRseTotalsColumns();
+    }
+
+    private void ResizeAlertsColumns()
+    {
+        ResizeListViewColumns(_alertsList, 0.25, 0.20, 0.55);
+    }
+
+    private void ResizeDailyAggregationColumns()
+    {
+        ResizeListViewColumns(_dailyAggregationList, 0.60, 0.40);
+    }
+
+    private void ResizeRseTotalsColumns()
+    {
+        ResizeListViewColumns(_rseTotalsList, 0.48, 0.24, 0.28);
+    }
+
+    private static void ResizeListViewColumns(ListView listView, params double[] ratios)
+    {
+        if (listView.Columns.Count == 0 || listView.ClientSize.Width <= 0 || ratios.Length != listView.Columns.Count)
+        {
+            return;
+        }
+
+        var availableWidth = Math.Max(120, listView.ClientSize.Width - 6);
+        var consumed = 0;
+
+        for (var index = 0; index < listView.Columns.Count; index++)
+        {
+            var width = index == listView.Columns.Count - 1
+                ? Math.Max(40, availableWidth - consumed)
+                : Math.Max(40, (int)Math.Floor(availableWidth * ratios[index]));
+
+            listView.Columns[index].Width = width;
+            consumed += width;
+        }
     }
 
     private static Label CreateMetricValueLabel(string? initialText = null)
