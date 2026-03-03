@@ -22,7 +22,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<EnergyDbContext>();
-    await dbContext.Database.EnsureDeletedAsync();
     await dbContext.Database.EnsureCreatedAsync();
 
     var importService = scope.ServiceProvider.GetRequiredService<CsvDatasetImportService>();

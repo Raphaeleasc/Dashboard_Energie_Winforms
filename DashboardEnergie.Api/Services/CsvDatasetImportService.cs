@@ -145,7 +145,27 @@ public sealed class CsvDatasetImportService(
 
     private string ResolvePath(string configuredPath)
     {
-        return Path.GetFullPath(Path.Combine(environment.ContentRootPath, configuredPath));
+        var directPath = Path.GetFullPath(Path.Combine(environment.ContentRootPath, configuredPath));
+        if (File.Exists(directPath))
+        {
+            return directPath;
+        }
+
+        var dataFileName = Path.GetFileName(configuredPath);
+        var currentDirectory = new DirectoryInfo(environment.ContentRootPath);
+
+        while (currentDirectory is not null)
+        {
+            var candidate = Path.Combine(currentDirectory.FullName, "Data", dataFileName);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            currentDirectory = currentDirectory.Parent;
+        }
+
+        return directPath;
     }
 
     private static double ParseDouble(string value)

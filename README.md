@@ -32,3 +32,15 @@ Au demarrage, l'API recree la base SQLite locale puis recharge ces deux fichiers
 L'API ecoute sur `http://localhost:5188`.
 
 Depuis WinForms, le bouton `Recharger les CSV` permet de recharger les jeux de donnees dans SQLite sans quitter l'application.
+
+## Scripts de demo
+
+- `scripts/start-dashboard.ps1` : lance l'API puis WinForms
+- `scripts/stop-dashboard.ps1` : arrete les deux processus
+
+## Tests
+
+Projet de tests : `DashboardEnergie.Tests`
+
+- verification de l'import CSV vers SQLite
+- verification du snapshot API et des principaux indicateurs

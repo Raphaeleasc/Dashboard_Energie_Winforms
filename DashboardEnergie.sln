@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DashboardEnergie.Shared", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DashboardEnergie.WinForms", "DashboardEnergie.WinForms\DashboardEnergie.WinForms.csproj", "{9F27374E-5A25-47EF-80F2-688677C37CB9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DashboardEnergie.Tests", "DashboardEnergie.Tests\DashboardEnergie.Tests.csproj", "{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{9F27374E-5A25-47EF-80F2-688677C37CB9}.Release|x64.Build.0 = Release|Any CPU
 		{9F27374E-5A25-47EF-80F2-688677C37CB9}.Release|x86.ActiveCfg = Release|Any CPU
 		{9F27374E-5A25-47EF-80F2-688677C37CB9}.Release|x86.Build.0 = Release|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Debug|x64.Build.0 = Debug|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Debug|x86.Build.0 = Debug|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Release|x64.ActiveCfg = Release|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Release|x64.Build.0 = Release|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Release|x86.ActiveCfg = Release|Any CPU
+		{29A8E85E-1DB8-438C-B33F-8FEEDB727F00}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
