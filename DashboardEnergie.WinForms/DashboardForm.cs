@@ -9,6 +9,8 @@ public sealed class DashboardForm : Form
     private readonly DashboardApiClient _apiClient = new(ApiBaseAddress);
     private readonly Button _reloadButton = new();
     private readonly ToolStripStatusLabel _statusLabel = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+    private readonly ComboBox _technicianChartModeCombo = new();
+    private readonly Label _technicianChartModeCaption = new();
 
     private readonly Label _techCurrentPowerValue = CreateMetricValueLabel();
     private readonly Label _techPeakDayValue = CreateMetricValueLabel();
@@ -37,6 +39,7 @@ public sealed class DashboardForm : Form
     private readonly ListView _rseTotalsList = new();
 
     private bool _refreshInProgress;
+    private DashboardSnapshotDto? _currentSnapshot;
 
     public DashboardForm()
     {
@@ -60,6 +63,7 @@ public sealed class DashboardForm : Form
         ConfigureAlertsList();
         ConfigureDailyAggregationList();
         ConfigureRseTotalsList();
+        ConfigureTechnicianChartModeSelector();
 
         var root = new TableLayoutPanel
         {
@@ -202,7 +206,10 @@ public sealed class DashboardForm : Form
             ("Derniere heure chargee", _techLastHourValue, _techCoverageCaption, Color.FromArgb(45, 94, 118)),
             ("Total du dernier jour", _techDayTotalValue, _techLastUpdateCaption, Color.FromArgb(76, 78, 114)));
 
-        var chartSection = CreateSectionPanel("Courbe des dernieres mesures horaires", _powerChart, new Padding(0, 0, 0, 14));
+        var chartSection = CreateSectionPanel(
+            "Analyse des donnees techniques",
+            BuildTechnicianChartPanel(),
+            new Padding(0, 0, 0, 14));
 
         var lower = new TableLayoutPanel
         {
@@ -280,6 +287,35 @@ public sealed class DashboardForm : Form
         root.Controls.Add(lower, 0, 2);
 
         return root;
+    }
+
+    private Control BuildTechnicianChartPanel()
+    {
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2
+        };
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+
+        var header = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1
+        };
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 260F));
+
+        header.Controls.Add(_technicianChartModeCaption, 0, 0);
+        header.Controls.Add(_technicianChartModeCombo, 1, 0);
+
+        layout.Controls.Add(header, 0, 0);
+        layout.Controls.Add(_powerChart, 0, 1);
+
+        return layout;
     }
 
     private static Control BuildMetricStrip(params (string title, Label value, Label footer, Color accent)[] cards)
@@ -449,6 +485,27 @@ public sealed class DashboardForm : Form
         _rseTotalsList.Columns.Add("Part", 90);
     }
 
+    private void ConfigureTechnicianChartModeSelector()
+    {
+        _technicianChartModeCaption.Dock = DockStyle.Fill;
+        _technicianChartModeCaption.TextAlign = ContentAlignment.MiddleLeft;
+        _technicianChartModeCaption.ForeColor = Color.FromArgb(92, 98, 92);
+        _technicianChartModeCaption.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point);
+        _technicianChartModeCaption.Text = "Vue brute : puissance par point du fichier technicien.";
+
+        _technicianChartModeCombo.Dock = DockStyle.Fill;
+        _technicianChartModeCombo.DropDownStyle = ComboBoxStyle.DropDownList;
+        _technicianChartModeCombo.FlatStyle = FlatStyle.Flat;
+        _technicianChartModeCombo.Items.AddRange(
+            [
+                "Dernieres mesures (W)",
+                "Aggregation horaire (kWh)",
+                "Aggregation journaliere (kWh)"
+            ]);
+        _technicianChartModeCombo.SelectedIndex = 0;
+        _technicianChartModeCombo.SelectedIndexChanged += OnTechnicianChartModeChanged;
+    }
+
     private async void OnShownAsync(object? sender, EventArgs eventArgs)
     {
         await RefreshDashboardAsync();
@@ -484,6 +541,14 @@ public sealed class DashboardForm : Form
         _apiClient.Dispose();
     }
 
+    private void OnTechnicianChartModeChanged(object? sender, EventArgs eventArgs)
+    {
+        if (_currentSnapshot is not null)
+        {
+            UpdateTechnicianChart(_currentSnapshot);
+        }
+    }
+
     private async Task RefreshDashboardAsync()
     {
         if (_refreshInProgress)
@@ -498,6 +563,7 @@ public sealed class DashboardForm : Form
         try
         {
             var snapshot = await _apiClient.GetSnapshotAsync();
+            _currentSnapshot = snapshot;
             ApplySnapshot(snapshot);
             _statusLabel.Text =
                 $"Vue technicien : {snapshot.Summary.CoverageStart:dd/MM/yyyy} -> {snapshot.Summary.CoverageEnd:dd/MM/yyyy} | " +
@@ -519,7 +585,7 @@ public sealed class DashboardForm : Form
         ApplyTechnicianSummary(snapshot);
         ApplyRseSummary(snapshot);
 
-        _powerChart.SetReadings(snapshot.LatestReadings);
+        UpdateTechnicianChart(snapshot);
         _monthlyTotalsChart.SetBreakdowns(snapshot.RseMonthlyBreakdowns);
 
         UpdateReadingsGrid(snapshot.LatestReadings);
@@ -527,6 +593,25 @@ public sealed class DashboardForm : Form
         UpdateDailyAggregations(snapshot.DailyConsumption);
         UpdateMonthlyBreakdowns(snapshot.RseMonthlyBreakdowns);
         UpdateRseTotals(snapshot.RseCategoryTotals);
+    }
+
+    private void UpdateTechnicianChart(DashboardSnapshotDto snapshot)
+    {
+        switch (_technicianChartModeCombo.SelectedIndex)
+        {
+            case 1:
+                _powerChart.SetAggregations(snapshot.HourlyConsumption);
+                _technicianChartModeCaption.Text = "Aggregation horaire : consommation totale par heure sur la fin du jeu technicien.";
+                break;
+            case 2:
+                _powerChart.SetAggregations(snapshot.DailyConsumption);
+                _technicianChartModeCaption.Text = "Aggregation journaliere : total kWh par jour pour visualiser les variations globales.";
+                break;
+            default:
+                _powerChart.SetReadings(snapshot.LatestReadings);
+                _technicianChartModeCaption.Text = "Vue brute : puissance par point du fichier technicien.";
+                break;
+        }
     }
 
     private void ApplyTechnicianSummary(DashboardSnapshotDto snapshot)

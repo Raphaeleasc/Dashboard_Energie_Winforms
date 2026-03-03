@@ -16,7 +16,7 @@ Au demarrage, l'API recree la base SQLite locale puis recharge ces deux fichiers
 
 ## Vues utilisateur
 
-- `Technicien d'exploitation` : dernieres mesures, courbe horaire, alertes, aggregation journaliere
+- `Technicien d'exploitation` : dernieres mesures, alertes, aggregation journaliere et graphique basculable entre mesures brutes, vue horaire et vue journaliere
 - `Responsable energie / RSE` : total annuel, evolution mensuelle, detail par poste, repartition annuelle
 
 ## Documentation
@@ -30,3 +30,5 @@ Au demarrage, l'API recree la base SQLite locale puis recharge ces deux fichiers
 2. Lancer le client WinForms : `dotnet run --project DashboardEnergie.WinForms`
 
 L'API ecoute sur `http://localhost:5188`.
+
+Depuis WinForms, le bouton `Recharger les CSV` permet de recharger les jeux de donnees dans SQLite sans quitter l'application.

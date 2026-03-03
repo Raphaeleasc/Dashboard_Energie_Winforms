@@ -12,6 +12,7 @@
 - centralisation de donnees : via import des CSV dans SQLite
 - affichage graphique clair : courbe technicien + graphique mensuel RSE
 - analyse basique : aggregations minute/heure/jour et synthese mensuelle
+- bascule de lecture technicien : mesures brutes, aggregation horaire, aggregation journaliere
 - detection d'anomalies : seuil fixe sur la vue technicien
 - tableau des dernieres valeurs : present dans la vue technicien
 - alertes visuelles : liste d'alertes avec niveaux `Surveillance` et `Critique`
