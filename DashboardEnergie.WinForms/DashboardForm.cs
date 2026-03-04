@@ -4,9 +4,9 @@ namespace DashboardEnergie.WinForms;
 
 public sealed class DashboardForm : Form
 {
-    private const string ApiBaseAddress = "http://localhost:5188/";
-
-    private readonly DashboardApiClient _apiClient = new(ApiBaseAddress);
+    private readonly DashboardApiClient _apiClient;
+    private readonly ApiProcessManager _apiProcessManager;
+    private readonly CancellationTokenSource _lifetimeCts = new();
     private readonly Button _reloadButton = new();
     private readonly ToolStripStatusLabel _statusLabel = new() { Spring = true, TextAlign = ContentAlignment.MiddleLeft };
     private readonly ComboBox _technicianChartModeCombo = new();
@@ -43,6 +43,11 @@ public sealed class DashboardForm : Form
 
     public DashboardForm()
     {
+        var apiBaseAddress = ResolveApiBaseAddress();
+        _apiClient = new DashboardApiClient(apiBaseAddress);
+        _apiProcessManager = new ApiProcessManager();
+
+        AutoScaleMode = AutoScaleMode.Dpi;
         Text = "Dashboard Energie";
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(1280, 820);
@@ -64,6 +69,7 @@ public sealed class DashboardForm : Form
         ConfigureDailyAggregationList();
         ConfigureRseTotalsList();
         ConfigureTechnicianChartModeSelector();
+        ConfigureCharts();
 
         var root = new TableLayoutPanel
         {
@@ -73,7 +79,7 @@ public sealed class DashboardForm : Form
             RowCount = 2,
             Padding = new Padding(18)
         };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 92F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 118F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         root.Controls.Add(BuildHeader(), 0, 0);
@@ -113,7 +119,7 @@ public sealed class DashboardForm : Form
             RowCount = 1
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 210F));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 230F));
 
         var titlePanel = new TableLayoutPanel
         {
@@ -121,7 +127,7 @@ public sealed class DashboardForm : Form
             ColumnCount = 1,
             RowCount = 2
         };
-        titlePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30F));
+        titlePanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
         titlePanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         var titleLabel = new Label
@@ -129,7 +135,7 @@ public sealed class DashboardForm : Form
             Dock = DockStyle.Fill,
             Text = "Dashboard de consommation energetique",
             ForeColor = Color.FromArgb(34, 42, 34),
-            Font = new Font("Segoe UI", 20F, FontStyle.Bold, GraphicsUnit.Point)
+            Font = new Font("Segoe UI", 22F, FontStyle.Bold, GraphicsUnit.Point)
         };
 
         var subtitleLabel = new Label
@@ -146,7 +152,9 @@ public sealed class DashboardForm : Form
         _reloadButton.ForeColor = Color.White;
         _reloadButton.FlatStyle = FlatStyle.Flat;
         _reloadButton.FlatAppearance.BorderSize = 0;
+        _reloadButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(72, 108, 81);
         _reloadButton.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold, GraphicsUnit.Point);
+        _reloadButton.TextAlign = ContentAlignment.MiddleCenter;
         _reloadButton.Margin = new Padding(24, 8, 0, 8);
         _reloadButton.Click += OnReloadClickedAsync;
 
@@ -196,7 +204,7 @@ public sealed class DashboardForm : Form
             ColumnCount = 1,
             RowCount = 3
         };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 116F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 128F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
 
@@ -255,7 +263,7 @@ public sealed class DashboardForm : Form
             ColumnCount = 1,
             RowCount = 3
         };
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 116F));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 128F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 42F));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 58F));
 
@@ -364,9 +372,9 @@ public sealed class DashboardForm : Form
             ColumnCount = 1,
             RowCount = 3
         };
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 26F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         var titleLabel = new Label
         {
@@ -449,12 +457,26 @@ public sealed class DashboardForm : Form
         grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         grid.MultiSelect = false;
         grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        grid.EnableHeadersVisualStyles = false;
+        grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        grid.ColumnHeadersHeight = 34;
+        grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(224, 234, 228);
+        grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(39, 49, 40);
+        grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold, GraphicsUnit.Point);
+        grid.DefaultCellStyle.BackColor = Color.White;
+        grid.DefaultCellStyle.ForeColor = Color.FromArgb(38, 50, 38);
+        grid.DefaultCellStyle.Padding = new Padding(2);
+        grid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 247);
+        grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
         grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(224, 237, 227);
         grid.DefaultCellStyle.SelectionForeColor = Color.FromArgb(38, 50, 38);
+        grid.RowTemplate.Height = 30;
+        grid.RowHeadersVisible = false;
     }
 
     private void ConfigureAlertsList()
     {
+        ConfigureListView(_alertsList);
         _alertsList.View = View.Details;
         _alertsList.FullRowSelect = true;
         _alertsList.GridLines = false;
@@ -468,6 +490,7 @@ public sealed class DashboardForm : Form
 
     private void ConfigureDailyAggregationList()
     {
+        ConfigureListView(_dailyAggregationList);
         _dailyAggregationList.View = View.Details;
         _dailyAggregationList.FullRowSelect = true;
         _dailyAggregationList.GridLines = false;
@@ -480,6 +503,7 @@ public sealed class DashboardForm : Form
 
     private void ConfigureRseTotalsList()
     {
+        ConfigureListView(_rseTotalsList);
         _rseTotalsList.View = View.Details;
         _rseTotalsList.FullRowSelect = true;
         _rseTotalsList.GridLines = false;
@@ -512,9 +536,35 @@ public sealed class DashboardForm : Form
         _technicianChartModeCombo.SelectedIndexChanged += OnTechnicianChartModeChanged;
     }
 
+    private void ConfigureCharts()
+    {
+        _powerChart.Dock = DockStyle.Fill;
+        _powerChart.Margin = Padding.Empty;
+        _monthlyTotalsChart.Dock = DockStyle.Fill;
+        _monthlyTotalsChart.Margin = Padding.Empty;
+    }
+
+    private static void ConfigureListView(ListView listView)
+    {
+        listView.BackColor = Color.White;
+        listView.BorderStyle = BorderStyle.None;
+        listView.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+    }
+
     private async void OnShownAsync(object? sender, EventArgs eventArgs)
     {
-        await RefreshDashboardAsync();
+        try
+        {
+            await EnsureApiReadyAsync(_lifetimeCts.Token);
+            await RefreshDashboardAsync(_lifetimeCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            UpdateStatus($"Initialisation impossible : {exception.Message}");
+        }
     }
 
     private async void OnReloadClickedAsync(object? sender, EventArgs eventArgs)
@@ -525,16 +575,19 @@ public sealed class DashboardForm : Form
         }
 
         _reloadButton.Enabled = false;
-        _statusLabel.Text = "Rechargement des CSV dans SQLite...";
+        UpdateStatus("Rechargement des CSV dans SQLite...");
 
         try
         {
-            await _apiClient.ReloadAsync();
-            await RefreshDashboardAsync();
+            await _apiClient.ReloadAsync(_lifetimeCts.Token);
+            await RefreshDashboardAsync(_lifetimeCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception exception)
         {
-            _statusLabel.Text = $"Rechargement impossible : {exception.Message}";
+            UpdateStatus($"Rechargement impossible : {exception.Message}");
         }
         finally
         {
@@ -544,6 +597,9 @@ public sealed class DashboardForm : Form
 
     private void OnFormClosing(object? sender, FormClosingEventArgs eventArgs)
     {
+        _lifetimeCts.Cancel();
+        _lifetimeCts.Dispose();
+        _apiProcessManager.Dispose();
         _apiClient.Dispose();
     }
 
@@ -555,7 +611,14 @@ public sealed class DashboardForm : Form
         }
     }
 
-    private async Task RefreshDashboardAsync()
+    private async Task EnsureApiReadyAsync(CancellationToken cancellationToken)
+    {
+        UpdateStatus("Verification de l'API locale...");
+        var startup = await _apiProcessManager.EnsureApiRunningAsync(_apiClient, cancellationToken);
+        UpdateStatus(startup.Message);
+    }
+
+    private async Task RefreshDashboardAsync(CancellationToken cancellationToken)
     {
         if (_refreshInProgress)
         {
@@ -564,20 +627,23 @@ public sealed class DashboardForm : Form
 
         _refreshInProgress = true;
         _reloadButton.Enabled = false;
-        _statusLabel.Text = "Chargement des donnees du dashboard...";
+        UpdateStatus("Chargement des donnees du dashboard...");
 
         try
         {
-            var snapshot = await _apiClient.GetSnapshotAsync();
+            var snapshot = await _apiClient.GetSnapshotAsync(cancellationToken);
             _currentSnapshot = snapshot;
             ApplySnapshot(snapshot);
-            _statusLabel.Text =
+            UpdateStatus(
                 $"Vue technicien : {snapshot.Summary.CoverageStart:dd/MM/yyyy} -> {snapshot.Summary.CoverageEnd:dd/MM/yyyy} | " +
-                $"Vue RSE : 12 mois charges jusqu'a {snapshot.Summary.LatestMonthLabel}";
+                $"Vue RSE : {snapshot.RseMonthlyBreakdowns.Count} mois charges jusqu'a {snapshot.Summary.LatestMonthLabel}");
+        }
+        catch (OperationCanceledException)
+        {
         }
         catch (Exception exception)
         {
-            _statusLabel.Text = $"API indisponible : {exception.Message}";
+            UpdateStatus($"API indisponible : {exception.Message}");
         }
         finally
         {
@@ -783,6 +849,33 @@ public sealed class DashboardForm : Form
         }
     }
 
+    private void UpdateStatus(string message)
+    {
+        if (!IsDisposed)
+        {
+            _statusLabel.Text = message;
+        }
+    }
+
+    private static string ResolveApiBaseAddress()
+    {
+        var configured = Environment.GetEnvironmentVariable("DASHBOARD_API_URL");
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return "http://localhost:5188/";
+        }
+
+        var normalized = configured.Trim();
+        if (!normalized.EndsWith('/'))
+        {
+            normalized += "/";
+        }
+
+        return Uri.TryCreate(normalized, UriKind.Absolute, out _)
+            ? normalized
+            : "http://localhost:5188/";
+    }
+
     private static Label CreateMetricValueLabel(string? initialText = null)
     {
         return new Label
@@ -792,7 +885,7 @@ public sealed class DashboardForm : Form
             Text = initialText ?? "--",
             ForeColor = Color.FromArgb(34, 42, 34),
             TextAlign = ContentAlignment.MiddleLeft,
-            Font = new Font("Segoe UI", 23F, FontStyle.Bold, GraphicsUnit.Point)
+            Font = new Font("Segoe UI", 20F, FontStyle.Bold, GraphicsUnit.Point)
         };
     }
 

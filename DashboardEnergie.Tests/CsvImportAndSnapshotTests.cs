@@ -43,6 +43,24 @@ public sealed class CsvImportAndSnapshotTests
         Assert.Contains(snapshot.RseCategoryTotals, item => item.Category == "Chauffage");
     }
 
+    [Fact]
+    public async Task GetHealthAsync_ReturnsReadyStateAfterCsvReload()
+    {
+        await using var harness = await TestHarness.CreateAsync();
+
+        var importService = harness.CreateImportService();
+        await importService.ReloadAsync();
+
+        var queryService = harness.CreateQueryService();
+        var health = await queryService.GetHealthAsync();
+
+        Assert.Equal("Ready", health.Status);
+        Assert.True(health.IsSnapshotReady);
+        Assert.Equal(720, health.TechnicianRowCount);
+        Assert.Equal(12, health.RseRowCount);
+        Assert.Equal(new DateTime(2025, 1, 30, 23, 0, 0), health.LatestTechnicianTimestamp);
+    }
+
     private sealed class TestHarness : IAsyncDisposable
     {
         private readonly string _databasePath;

@@ -26,17 +26,23 @@ Au demarrage, l'API recree la base SQLite locale puis recharge ces deux fichiers
 
 ## Demarrage
 
-1. Lancer l'API : `dotnet run --project DashboardEnergie.Api`
-2. Lancer le client WinForms : `dotnet run --project DashboardEnergie.WinForms`
+1. Lancer le client WinForms : `dotnet run --project DashboardEnergie.WinForms`
+2. Si l'API n'est pas deja active, WinForms la demarre automatiquement et attend sa disponibilite.
 
 L'API ecoute sur `http://localhost:5188`.
 
 Depuis WinForms, le bouton `Recharger les CSV` permet de recharger les jeux de donnees dans SQLite sans quitter l'application.
 
+Option: vous pouvez forcer une autre URL API via la variable d'environnement `DASHBOARD_API_URL`.
+
 ## Scripts de demo
 
 - `scripts/start-dashboard.ps1` : lance l'API puis WinForms
 - `scripts/stop-dashboard.ps1` : arrete les deux processus
+
+## Endpoint de sante API
+
+- `GET /api/dashboard/health` : etat de disponibilite de l'API et des donnees chargees
 
 ## Tests
 
