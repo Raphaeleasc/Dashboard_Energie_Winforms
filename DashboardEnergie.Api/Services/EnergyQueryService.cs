@@ -81,6 +81,35 @@ public sealed class EnergyQueryService(
         };
     }
 
+    public async Task<DashboardHealthDto> GetHealthAsync(CancellationToken cancellationToken = default)
+    {
+        var technicianRowCount = await dbContext.TechnicianReadings
+            .AsNoTracking()
+            .CountAsync(cancellationToken);
+
+        var rseRowCount = await dbContext.RseMonthlyBreakdowns
+            .AsNoTracking()
+            .CountAsync(cancellationToken);
+
+        var latestTechnicianTimestamp = await dbContext.TechnicianReadings
+            .AsNoTracking()
+            .OrderByDescending(reading => reading.Timestamp)
+            .Select(reading => (DateTime?)reading.Timestamp)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var isSnapshotReady = technicianRowCount > 0 && rseRowCount > 0;
+
+        return new DashboardHealthDto
+        {
+            Status = isSnapshotReady ? "Ready" : "Degraded",
+            IsSnapshotReady = isSnapshotReady,
+            TechnicianRowCount = technicianRowCount,
+            RseRowCount = rseRowCount,
+            LatestTechnicianTimestamp = latestTechnicianTimestamp,
+            TimestampUtc = DateTime.UtcNow
+        };
+    }
+
     public async Task<IReadOnlyList<EnergyReadingDto>> GetLatestReadingsAsync(
         int count,
         CancellationToken cancellationToken = default)

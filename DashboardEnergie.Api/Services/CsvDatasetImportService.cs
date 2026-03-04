@@ -47,10 +47,13 @@ public sealed class CsvDatasetImportService(
         using var reader = new StreamReader(stream);
 
         await reader.ReadLineAsync(cancellationToken);
+        var lineNumber = 1;
+        var skippedLines = 0;
 
         while (true)
         {
             var line = await reader.ReadLineAsync(cancellationToken);
+            lineNumber++;
             if (line is null)
             {
                 break;
@@ -64,15 +67,29 @@ public sealed class CsvDatasetImportService(
             var parts = line.Split(';');
             if (parts.Length != 3)
             {
-                throw new InvalidOperationException($"Unexpected technician CSV line: '{line}'.");
+                skippedLines++;
+                logger.LogWarning("Skipped technician CSV line {LineNumber}: unexpected format.", lineNumber);
+                continue;
             }
 
-            var timestamp = DateTime.ParseExact(
-                $"{parts[0]} {parts[1]}",
-                "dd/MM/yyyy HH:mm:ss",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None);
-            var energyKwh = double.Parse(parts[2], CultureInfo.InvariantCulture);
+            if (!DateTime.TryParseExact(
+                    $"{parts[0]} {parts[1]}",
+                    "dd/MM/yyyy HH:mm:ss",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var timestamp))
+            {
+                skippedLines++;
+                logger.LogWarning("Skipped technician CSV line {LineNumber}: invalid timestamp.", lineNumber);
+                continue;
+            }
+
+            if (!TryParseDouble(parts[2], out var energyKwh))
+            {
+                skippedLines++;
+                logger.LogWarning("Skipped technician CSV line {LineNumber}: invalid energy value '{Value}'.", lineNumber, parts[2]);
+                continue;
+            }
 
             rows.Add(new TechnicianReading
             {
@@ -82,6 +99,16 @@ public sealed class CsvDatasetImportService(
                 PowerWatts = Math.Round(energyKwh * 1000d, 0),
                 IsAnomaly = (energyKwh * 1000d) >= _options.AlertThresholdWatts
             });
+        }
+
+        if (rows.Count == 0)
+        {
+            throw new InvalidOperationException($"No valid technician rows found in '{path}'.");
+        }
+
+        if (skippedLines > 0)
+        {
+            logger.LogWarning("Technician import skipped {SkippedLines} invalid lines.", skippedLines);
         }
 
         return rows;
@@ -101,10 +128,13 @@ public sealed class CsvDatasetImportService(
         using var reader = new StreamReader(stream);
 
         await reader.ReadLineAsync(cancellationToken);
+        var lineNumber = 1;
+        var skippedLines = 0;
 
         while (true)
         {
             var line = await reader.ReadLineAsync(cancellationToken);
+            lineNumber++;
             if (line is null)
             {
                 break;
@@ -118,26 +148,56 @@ public sealed class CsvDatasetImportService(
             var parts = line.Split(',');
             if (parts.Length != 7)
             {
-                throw new InvalidOperationException($"Unexpected RSE CSV line: '{line}'.");
+                skippedLines++;
+                logger.LogWarning("Skipped RSE CSV line {LineNumber}: unexpected format.", lineNumber);
+                continue;
             }
 
-            var monthStart = DateTime.ParseExact(
-                $"{parts[0]}-01",
-                "yyyy-MM-dd",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None);
+            if (!DateTime.TryParseExact(
+                    $"{parts[0]}-01",
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var monthStart))
+            {
+                skippedLines++;
+                logger.LogWarning("Skipped RSE CSV line {LineNumber}: invalid month label '{Month}'.", lineNumber, parts[0]);
+                continue;
+            }
+
+            if (!TryParseDouble(parts[1], out var totalKwh) ||
+                !TryParseDouble(parts[2], out var heatingKwh) ||
+                !TryParseDouble(parts[3], out var waterHeatingKwh) ||
+                !TryParseDouble(parts[4], out var appliancesKwh) ||
+                !TryParseDouble(parts[5], out var lightingKwh) ||
+                !TryParseDouble(parts[6], out var otherKwh))
+            {
+                skippedLines++;
+                logger.LogWarning("Skipped RSE CSV line {LineNumber}: invalid numeric value.", lineNumber);
+                continue;
+            }
 
             rows.Add(new RseMonthlyBreakdown
             {
                 MonthStart = monthStart,
                 MonthLabel = parts[0],
-                TotalKwh = ParseDouble(parts[1]),
-                HeatingKwh = ParseDouble(parts[2]),
-                WaterHeatingKwh = ParseDouble(parts[3]),
-                AppliancesKwh = ParseDouble(parts[4]),
-                LightingKwh = ParseDouble(parts[5]),
-                OtherKwh = ParseDouble(parts[6])
+                TotalKwh = totalKwh,
+                HeatingKwh = heatingKwh,
+                WaterHeatingKwh = waterHeatingKwh,
+                AppliancesKwh = appliancesKwh,
+                LightingKwh = lightingKwh,
+                OtherKwh = otherKwh
             });
+        }
+
+        if (rows.Count == 0)
+        {
+            throw new InvalidOperationException($"No valid RSE rows found in '{path}'.");
+        }
+
+        if (skippedLines > 0)
+        {
+            logger.LogWarning("RSE import skipped {SkippedLines} invalid lines.", skippedLines);
         }
 
         return rows;
@@ -168,8 +228,17 @@ public sealed class CsvDatasetImportService(
         return directPath;
     }
 
-    private static double ParseDouble(string value)
+    private static bool TryParseDouble(string value, out double parsedValue)
     {
-        return double.Parse(value, CultureInfo.InvariantCulture);
+        return double.TryParse(
+                   value,
+                   NumberStyles.Float,
+                   CultureInfo.InvariantCulture,
+                   out parsedValue)
+               || double.TryParse(
+                   value,
+                   NumberStyles.Float,
+                   CultureInfo.GetCultureInfo("fr-FR"),
+                   out parsedValue);
     }
 }

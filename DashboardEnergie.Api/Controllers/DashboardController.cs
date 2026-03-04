@@ -10,6 +10,13 @@ public sealed class DashboardController(
     EnergyQueryService queryService,
     CsvDatasetImportService importService) : ControllerBase
 {
+    [HttpGet("health")]
+    public async Task<ActionResult<DashboardHealthDto>> GetHealth(CancellationToken cancellationToken)
+    {
+        var health = await queryService.GetHealthAsync(cancellationToken);
+        return Ok(health);
+    }
+
     [HttpGet("snapshot")]
     public async Task<ActionResult<DashboardSnapshotDto>> GetSnapshot(CancellationToken cancellationToken)
     {
