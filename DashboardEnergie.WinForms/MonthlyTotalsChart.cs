@@ -11,8 +11,9 @@ internal sealed class MonthlyTotalsChart : Control
     {
         DoubleBuffered = true;
         ResizeRedraw = true;
-        BackColor = Color.White;
-        ForeColor = Color.FromArgb(55, 74, 110);
+        BackColor = UiTheme.Surface;
+        ForeColor = UiTheme.AccentBlue;
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
     }
 
     public void SetBreakdowns(IReadOnlyList<RseMonthlyBreakdownDto> breakdowns)
@@ -29,13 +30,13 @@ internal sealed class MonthlyTotalsChart : Control
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         graphics.Clear(BackColor);
 
-        var plotArea = new Rectangle(54, 18, Math.Max(160, Width - 78), Math.Max(140, Height - 70));
+        var plotArea = new Rectangle(56, 20, Math.Max(160, Width - 84), Math.Max(140, Height - 74));
 
-        using var axisPen = new Pen(Color.FromArgb(180, 188, 198), 1F);
-        using var gridPen = new Pen(Color.FromArgb(231, 236, 242), 1F);
-        using var barBrush = new SolidBrush(Color.FromArgb(88, 117, 160));
-        using var lastBarBrush = new SolidBrush(Color.FromArgb(192, 124, 66));
-        using var textBrush = new SolidBrush(Color.FromArgb(89, 95, 103));
+        using var axisPen = new Pen(UiTheme.BorderStrong, 1F);
+        using var gridPen = new Pen(Color.FromArgb(234, 239, 244), 1F);
+        using var barBrush = new SolidBrush(UiTheme.AccentBlue);
+        using var lastBarBrush = new SolidBrush(UiTheme.AccentAmber);
+        using var textBrush = new SolidBrush(UiTheme.TextSecondary);
 
         DrawGrid(graphics, plotArea, axisPen, gridPen, textBrush);
 
@@ -46,7 +47,7 @@ internal sealed class MonthlyTotalsChart : Control
                 "Aucune donnee RSE disponible.",
                 Font,
                 plotArea,
-                Color.FromArgb(100, 106, 100),
+                UiTheme.TextMuted,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             return;
         }
