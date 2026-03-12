@@ -15,9 +15,10 @@ internal sealed class PowerTrendChart : Control
     {
         DoubleBuffered = true;
         ResizeRedraw = true;
-        BackColor = Color.White;
-        ForeColor = Color.FromArgb(47, 84, 62);
+        BackColor = UiTheme.Surface;
+        ForeColor = UiTheme.Brand;
         Padding = new Padding(0);
+        Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
     }
 
     public void SetReadings(IReadOnlyList<EnergyReadingDto> readings)
@@ -52,13 +53,13 @@ internal sealed class PowerTrendChart : Control
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         graphics.Clear(BackColor);
 
-        var plotArea = new Rectangle(56, 20, Math.Max(140, Width - 80), Math.Max(120, Height - 70));
+        var plotArea = new Rectangle(58, 22, Math.Max(140, Width - 86), Math.Max(120, Height - 76));
 
-        using var axisPen = new Pen(Color.FromArgb(180, 188, 178), 1F);
-        using var gridPen = new Pen(Color.FromArgb(231, 236, 228), 1F);
-        using var linePen = new Pen(Color.FromArgb(47, 84, 62), 3F);
-        using var fillBrush = new SolidBrush(Color.FromArgb(75, 86, 141, 106));
-        using var textBrush = new SolidBrush(Color.FromArgb(88, 94, 88));
+        using var axisPen = new Pen(UiTheme.BorderStrong, 1F);
+        using var gridPen = new Pen(Color.FromArgb(233, 239, 235), 1F);
+        using var linePen = new Pen(UiTheme.Brand, 2.8F);
+        using var fillBrush = new SolidBrush(Color.FromArgb(56, UiTheme.Brand));
+        using var textBrush = new SolidBrush(UiTheme.TextSecondary);
 
         DrawGrid(graphics, plotArea, axisPen, gridPen, textBrush, _axisTitle);
 
@@ -69,7 +70,7 @@ internal sealed class PowerTrendChart : Control
                 _emptyMessage,
                 Font,
                 plotArea,
-                Color.FromArgb(100, 106, 100),
+                UiTheme.TextMuted,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
             return;
         }
